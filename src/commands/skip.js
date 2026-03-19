@@ -6,13 +6,13 @@ module.exports = {
     .setDescription('Pula a música atual'),
 
   async execute(interaction, client) {
-    const queue = client.queues.get(interaction.guildId);
-    if (!queue || !queue.playing) {
+    const player = client.lavalink.getPlayer(interaction.guildId);
+    if (!player || !player.playing) {
       return interaction.reply({ content: '❌ Não há nenhuma música tocando.', ephemeral: true });
     }
 
-    const skipped = queue.songs[0]?.title;
-    queue.skip();
-    await interaction.reply(`⏭️ Pulou: **${skipped}**`);
+    const title = player.queue.current?.info?.title;
+    await player.skip();
+    await interaction.reply(`⏭️ Pulou: **${title}**`);
   },
 };

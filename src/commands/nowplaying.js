@@ -6,24 +6,34 @@ module.exports = {
     .setDescription('Mostra a música tocando agora'),
 
   async execute(interaction, client) {
-    const queue = client.queues.get(interaction.guildId);
-    if (!queue || !queue.playing || !queue.songs[0]) {
+    const player = client.lavalink.getPlayer(interaction.guildId);
+    if (!player || !player.queue.current) {
       return interaction.reply({ content: '❌ Não há nenhuma música tocando.', ephemeral: true });
     }
 
-    const song = queue.songs[0];
+    const track = player.queue.current;
+    const pos = player.position;
+    const dur = track.info.length;
+
     const embed = new EmbedBuilder()
       .setTitle('🎵 Tocando Agora')
-      .setDescription(`**[${song.title}](${song.url})**`)
+      .setDescription(`**[${track.info.title}](${track.info.uri})**`)
       .setColor(0x5865F2)
       .addFields(
-        { name: '⏱️ Duração', value: song.duration, inline: true },
-        { name: '🔁 Loop', value: queue.loop ? 'Ativado' : 'Desativado', inline: true },
-        { name: '🔊 Volume', value: `${Math.round(queue.volume * 100)}%`, inline: true },
+        { name: '⏱️ Progresso', value: `${formatDuration(pos)} / ${formatDuration(dur)}`, inline: true },
+        { name: '🔁 Loop', value: player.repeatMode !== 'off' ? '✅' : '❌', inline: true },
+        { name: '🔊 Volume', value: `${player.volume}%`, inline: true },
       );
 
-    if (song.thumbnail) embed.setThumbnail(song.thumbnail);
+    if (track.info.artworkUrl) embed.setThumbnail(track.info.artworkUrl);
 
     await interaction.reply({ embeds: [embed] });
   },
 };
+
+function formatDuration(ms) {
+  if (!ms) return '0:00';
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  return `${m}:${String(s % 60).padStart(2, '0')}`;
+}

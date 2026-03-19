@@ -1,15 +1,12 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { joinVoiceChannel, entersState, VoiceConnectionStatus } = require('@discordjs/voice');
-const ytdlp = require('../ytdlp');
-const MusicQueue = require('../MusicQueue');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('play')
-    .setDescription('Toca uma música do YouTube')
+    .setDescription('Toca uma música (YouTube, SoundCloud, URL direta)')
     .addStringOption(opt =>
       opt.setName('musica')
-        .setDescription('Nome ou URL da música')
+        .setDescription('Nome, URL do YouTube, SoundCloud ou link direto')
         .setRequired(true)
     ),
 
@@ -29,55 +26,60 @@ module.exports = {
     await interaction.deferReply();
 
     try {
-      const isUrl = query.includes('youtube.com') || query.includes('youtu.be');
-      const info = isUrl ? await ytdlp.getInfo(query) : await ytdlp.search(query);
+      let player = client.lavalink.getPlayer(interaction.guildId);
+      if (!player) {
+        player = client.lavalink.createPlayer({
+          guildId: interaction.guildId,
+          voiceChannelId: voiceChannel.id,
+          textChannelId: interaction.channelId,
+          selfDeaf: true,
+          volume: 75,
+        });
+      }
 
-      if (!info) {
+      if (!player.connected) await player.connect();
+
+      // Detecta a fonte com base na query
+      let source = 'ytsearch';
+      if (query.includes('soundcloud.com')) source = 'soundcloud';
+      else if (query.includes('youtube.com') || query.includes('youtu.be')) source = 'youtube';
+      else if (query.startsWith('http')) source = 'http';
+
+      const res = await client.lavalink.search(
+        { query, source },
+        interaction.user
+      );
+
+      if (!res || !res.tracks?.length) {
         return interaction.editReply('❌ Nenhuma música encontrada.');
       }
 
-      const songInfo = {
-        title: info.title,
-        url: info.url,
-        duration: info.duration,
-        thumbnail: info.thumbnail,
-        getStream: () => ytdlp.getStream(info.url),
-      };
-
-      // Conecta ao canal de voz
-      let queue = client.queues.get(interaction.guildId);
-      if (!queue) {
-        const connection = joinVoiceChannel({
-          channelId: voiceChannel.id,
-          guildId: interaction.guildId,
-          adapterCreator: interaction.guild.voiceAdapterCreator,
-        });
-
-        try {
-          await entersState(connection, VoiceConnectionStatus.Ready, 30_000);
-        } catch {
-          connection.destroy();
-          return interaction.editReply('❌ Não consegui conectar ao canal de voz.');
-        }
-
-        queue = new MusicQueue(voiceChannel, interaction.channel, connection);
-        client.queues.set(interaction.guildId, queue);
-
-        connection.on(VoiceConnectionStatus.Destroyed, () => {
-          client.queues.delete(interaction.guildId);
-        });
-      }
-
-      queue.enqueue(songInfo);
-
-      if (queue.songs.length === 1) {
-        await interaction.editReply(`▶️ Tocando: **${songInfo.title}** (${songInfo.duration})`);
+      if (res.loadType === 'playlist') {
+        await player.queue.add(res.tracks);
+        await interaction.editReply(`✅ Playlist adicionada: **${res.playlist?.name}** (${res.tracks.length} músicas)`);
       } else {
-        await interaction.editReply(`✅ Adicionado à fila: **${songInfo.title}** (${songInfo.duration}) — Posição #${queue.songs.length}`);
+        const track = res.tracks[0];
+        await player.queue.add(track);
+        const pos = player.queue.tracks.length;
+        if (!player.playing) {
+          await interaction.editReply(`▶️ Tocando: **${track.info.title}** (${formatDuration(track.info.length)})`);
+        } else {
+          await interaction.editReply(`✅ Adicionado à fila: **${track.info.title}** (${formatDuration(track.info.length)}) — Posição #${pos}`);
+        }
       }
+
+      if (!player.playing) await player.play();
+
     } catch (error) {
       console.error('Erro no comando play:', error);
       await interaction.editReply('❌ Ocorreu um erro ao buscar ou reproduzir a música.');
     }
   },
 };
+
+function formatDuration(ms) {
+  if (!ms) return 'Desconhecido';
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  return `${m}:${String(s % 60).padStart(2, '0')}`;
+}

@@ -13,13 +13,13 @@ module.exports = {
     ),
 
   async execute(interaction, client) {
-    const queue = client.queues.get(interaction.guildId);
-    if (!queue || !queue.playing) {
+    const player = client.lavalink.getPlayer(interaction.guildId);
+    if (!player || !player.playing) {
       return interaction.reply({ content: '❌ Não há nenhuma música tocando.', ephemeral: true });
     }
 
     const vol = interaction.options.getInteger('nivel');
-    queue.setVolume(vol);
+    await player.setVolume(vol);
     await interaction.reply(`🔊 Volume ajustado para **${vol}%**`);
   },
 };
