@@ -3,9 +3,14 @@ const { createWriteStream, existsSync, mkdirSync } = require('fs');
 const path = require('path');
 const https = require('https');
 
+const { chmod } = require('fs');
+
+const IS_WINDOWS = process.platform === 'win32';
 const BIN_DIR = path.join(__dirname, '..', 'bin');
-const YTDLP = path.join(BIN_DIR, 'yt-dlp.exe');
-const YTDLP_URL = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe';
+const YTDLP = path.join(BIN_DIR, IS_WINDOWS ? 'yt-dlp.exe' : 'yt-dlp');
+const YTDLP_URL = IS_WINDOWS
+  ? 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
+  : 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp';
 
 let ready = false;
 
@@ -13,7 +18,7 @@ async function ensureYtDlp() {
   if (ready) return;
   if (existsSync(YTDLP)) { ready = true; return; }
 
-  console.log('📥 Baixando yt-dlp.exe pela primeira vez...');
+  console.log('📥 Baixando yt-dlp pela primeira vez...');
   mkdirSync(BIN_DIR, { recursive: true });
 
   await new Promise((resolve, reject) => {
@@ -32,8 +37,14 @@ async function ensureYtDlp() {
     download(YTDLP_URL);
   });
 
+  if (!IS_WINDOWS) {
+    await new Promise((resolve, reject) =>
+      chmod(YTDLP, 0o755, err => err ? reject(err) : resolve())
+    );
+  }
+
   ready = true;
-  console.log('✅ yt-dlp.exe baixado com sucesso!');
+  console.log('✅ yt-dlp baixado com sucesso!');
 }
 
 async function search(query) {
