@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
-const { LavalinkClient } = require('lavalink-client');
+const { LavalinkManager } = require('lavalink-client');
 const { readdirSync } = require('fs');
 const path = require('path');
 
@@ -25,7 +25,7 @@ for (const file of readdirSync(commandsPath).filter(f => f.endsWith('.js'))) {
 }
 
 // Inicializa o Lavalink
-client.lavalink = new LavalinkClient({
+client.lavalink = new LavalinkManager({
   nodes: [{
     authorization: process.env.LAVALINK_PASSWORD || 'blacksbot123',
     host: process.env.LAVALINK_HOST || 'localhost',

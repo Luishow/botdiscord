@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const lc = require\\(''lavalink-client''\\); console.log\\(Object.keys\\(lc\\).slice\\(0,10\\)\\)\")",
+      "Bash(node -e \":*)"
+    ]
+  }
+}
