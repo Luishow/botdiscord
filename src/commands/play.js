@@ -45,7 +45,7 @@ module.exports = {
       else if (query.includes('youtube.com') || query.includes('youtu.be')) source = 'youtube';
       else if (query.startsWith('http')) source = 'http';
 
-      const res = await client.lavalink.search(
+      const res = await player.search(
         { query, source },
         interaction.user
       );
