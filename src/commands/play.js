@@ -50,6 +50,8 @@ module.exports = {
         interaction.user
       );
 
+      console.log('[play] loadType:', res?.loadType, '| tracks:', res?.tracks?.length, '| query:', query);
+
       if (!res || !res.tracks?.length) {
         return interaction.editReply('❌ Nenhuma música encontrada.');
       }
