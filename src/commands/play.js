@@ -40,7 +40,7 @@ module.exports = {
       if (!player.connected) await player.connect();
 
       // Detecta a fonte com base na query
-      let source = 'ytsearch';
+      let source = 'scsearch'; // SoundCloud por padrão (funciona em VPS)
       if (query.includes('soundcloud.com')) source = 'soundcloud';
       else if (query.includes('youtube.com') || query.includes('youtu.be')) source = 'youtube';
       else if (query.startsWith('http')) source = 'http';
