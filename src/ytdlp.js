@@ -47,7 +47,11 @@ async function ensureYtDlp() {
   console.log('✅ yt-dlp baixado com sucesso!');
 }
 
-const BYPASS_ARGS = ['--extractor-args', 'youtube:player_client=ios,android'];
+const COOKIES_FILE = process.env.YOUTUBE_COOKIES;
+const BYPASS_ARGS = [
+  '--extractor-args', 'youtube:player_client=ios,android',
+  ...(COOKIES_FILE && existsSync(COOKIES_FILE) ? ['--cookies', COOKIES_FILE] : []),
+];
 
 async function search(query) {
   await ensureYtDlp();
