@@ -47,12 +47,15 @@ async function ensureYtDlp() {
   console.log('✅ yt-dlp baixado com sucesso!');
 }
 
+const BYPASS_ARGS = ['--extractor-args', 'youtube:player_client=ios,android'];
+
 async function search(query) {
   await ensureYtDlp();
   return new Promise((resolve, reject) => {
     execFile(YTDLP, [
       `ytsearch1:${query}`,
       '--dump-json', '--no-playlist', '--quiet', '--no-warnings',
+      ...BYPASS_ARGS,
     ], { maxBuffer: 5 * 1024 * 1024 }, (err, stdout) => {
       if (err) return reject(err);
       try {
@@ -68,6 +71,7 @@ async function getInfo(url) {
   return new Promise((resolve, reject) => {
     execFile(YTDLP, [
       url, '--dump-json', '--no-playlist', '--quiet', '--no-warnings',
+      ...BYPASS_ARGS,
     ], { maxBuffer: 5 * 1024 * 1024 }, (err, stdout) => {
       if (err) return reject(err);
       try {
@@ -84,6 +88,7 @@ function getStream(url) {
     '-f', 'bestaudio/best',
     '-o', '-',
     '--quiet', '--no-warnings', '--no-playlist',
+    ...BYPASS_ARGS,
   ]);
   proc.stderr.on('data', d => {
     const msg = d.toString();
